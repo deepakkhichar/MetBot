@@ -1,0 +1,55 @@
+trigger:
+  - main
+
+pool:
+  vmImage: ubuntu-latest
+
+strategy:
+  matrix:
+    Python310:
+      PYTHON_VERSION: '3.10'
+  maxParallel: 3
+variables:
+  - name: SECRET_KEY
+    value: $(SECRET_KEY)
+  - name: DEBUG
+    value: $(DEBUG)
+  - name: DATABASE_ENGINE
+    value: $(DATABASE_ENGINE)
+  - name: DATABASE_NAME
+    value: $(DATABASE_NAME)
+  - name: SESSION_COOKIE_AGE
+    value: $(SESSION_COOKIE_AGE)
+  - name: GEMINI_API_KEY
+    value: $(GEMINI_API_KEY)
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '$(PYTHON_VERSION)'
+      architecture: 'x64'
+
+  - script: |
+      python -m pip install --upgrade pip
+      python -m venv .venv
+      .venv/bin/pip install -r requirements.txt
+    displayName: 'Install dependencies'
+
+  - script: |
+      .venv/bin/python manage.py collectstatic --no-input
+      .venv/bin/python manage.py migrate
+    displayName: 'Run migrations'
+
+  - script: |
+      .venv/bin/python manage.py test
+    displayName: 'Run tests'
+
+  - script: |
+      .venv/bin/gunicorn --bind 0.0.0.0:8000 metbot.wsgi:application --daemon
+    displayName: 'Start Django Server with Gunicorn'
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFiles: '**/TEST-*.xml'
+      testRunTitle: 'Python $(PYTHON_VERSION)'
+    condition: succeededOrFailed()

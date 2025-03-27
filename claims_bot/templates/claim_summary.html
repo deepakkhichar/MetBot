@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="container py-5">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Claim Summary</h4>
+            </div>
+            <div class="card-body">
+
+                <div class="alert alert-success mb-4">
+                    <i class="fas fa-check-circle me-2"></i> Thank you for providing all the necessary information.
+                    Your claim has been submitted successfully.<br> A claims adjuster will contact you within 24-48
+                    hours.
+                </div>
+                {% if fraud_detected %}
+                    <div class="alert alert-danger fraud-alert">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Fraud Alert</h4>
+                        <p>This claim has been flagged for potential fraud (Score: {{ fraud_score|floatformat:2 }}).</p>
+                        <p><strong>Reasons:</strong> {{ fraud_reasons }}</p>
+                    </div>
+                {% elif fraud_score > 0.3 %}
+                    <div class="alert alert-warning fraud-alert">
+                        <h4><i class="fas fa-exclamation-circle"></i> Review Recommended</h4>
+                        <p>This claim has some unusual patterns (Score: {{ fraud_score|floatformat:2 }}).</p>
+                        <p><strong>Note:</strong> {{ fraud_reasons }}</p>
+                    </div>
+                {% else %}
+                    <div class="alert alert-success fraud-alert">
+                        <h4><i class="fas fa-check-circle"></i> No Fraud Indicators</h4>
+                        <p>This claim appears legitimate (Score: {{ fraud_score|floatformat:2 }}).</p>
+                    </div>
+                {% endif %}
+
+                <h5 class="mb-3">Claim Information</h5>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <table class="table table-bordered">
+                            <tbody>
+                            <tr>
+                                <th>Incident Date</th>
+                                <td>{{ claim_info.incident_date }}</td>
+                            </tr>
+                            <tr>
+                                <th>Location</th>
+                                <td>{{ claim_info.location }}</td>
+                            </tr>
+                            <tr>
+                                <th>Policy Number</th>
+                                <td>{{ claim_info.policy_number }}</td>
+                            </tr>
+                            <tr>
+                                <th>Driver Information</th>
+                                <td>{{ claim_info.driver_info }}</td>
+                            </tr>
+                            <tr>
+                                <th>Vehicle Details</th>
+                                <td>{{ claim_info.vehicle_details }}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-bordered">
+                            <tbody>
+                            <tr>
+                                <th>Incident Description</th>
+                                <td>{{ claim_info.incident_description }}</td>
+                            </tr>
+                            <tr>
+                                <th>Damage Description</th>
+                                <td>{{ claim_info.damage_description }}</td>
+                            </tr>
+                            <tr>
+                                <th>Other Parties</th>
+                                <td>{{ claim_info.other_parties|default:"None" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Police Report</th>
+                                <td>{{ claim_info.police_report|default:"None" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Witnesses</th>
+                                <td>{{ claim_info.witnesses|default:"None" }}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <h5 class="mb-3">Uploaded Documents</h5>
+                <div class="row">
+                    {% for document in documents %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card">
+                                {% if docs.is_image %}
+                                    <img src="{{ document.file.url }}" class="card-img-top" alt="Document">
+                                {% else %}
+                                    <div class="card-img-top text-center py-5 bg-light">
+                                        <i class="fas fa-file-alt fa-3x text-primary"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="card-body p-2">
+                                    <p class="card-text small text-center">{{ document.file.name }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-12">
+                            <p class="text-muted">No documents uploaded.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-4">
+                    <h5>Next Steps</h5>
+                    <ol>
+                        <li>A claims adjuster will contact you within 24-48 hours.</li>
+                        <li>They will review your claim details and may request additional information.</li>
+                        <li>Once your claim is approved, you'll receive instructions for repairs.</li>
+                    </ol>
+                </div>
+
+                <div class="mt-4 text-center">
+                    <a href="{% url 'chat_home' %}" class="btn btn-primary">Start New Claim</a>
+                    <button class="btn btn-outline-primary ms-2" onclick="window.print()">
+                        <i class="fas fa-print me-1"></i> Print Summary
+                    </button>
+                </div>
+            </div>
+            <div class="card-footer text-muted">
+                <small>Claim ID: {{ conversation.id }} | Submitted
+                    on: {{ conversation.updated_at|date:"F j, Y, g:i a" }}</small>
+            </div>
+        </div>
+    </div>
+{% endblock %}
